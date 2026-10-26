@@ -449,7 +449,7 @@ export default function App() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>1. Set Monthly Budget (₦)</Text>
+          <Text style={styles.cardTitle}>1. Set Monthly  Income (₦)</Text>
           <TextInput style={styles.budgetInput} value={budget} onChangeText={setBudget} keyboardType="numeric" />
           <Text style={styles.cardTitle}>2. Add Planned Expenses</Text>
           <TextInput style={styles.input} placeholder="Expense Name" placeholderTextColor="#A5B4FC" value={expenseName} onChangeText={setExpenseName} />
@@ -472,7 +472,7 @@ export default function App() {
                 <Text style={styles.listItemCost}>₦{item.cost}</Text>
               </View>
             ))}
-            <TouchableOpacity style={styles.button} onPress={runOptimization} disabled={isOptimizing}><Text style={styles.buttonText}>{isOptimizing ? "Processing ILP Engine..." : "Run AI Allocation"}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.button} onPress={runOptimization} disabled={isOptimizing}><Text style={styles.buttonText}>{isOptimizing ? "Processing ILP Engine..." : "Run Allocation"}</Text></TouchableOpacity>
           </View>
         )}
         {optimizationResult && (
