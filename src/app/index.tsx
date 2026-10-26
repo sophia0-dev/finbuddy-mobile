@@ -2,7 +2,7 @@ import React, { useState, useRef } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, StatusBar, Alert, Dimensions, Switch } from 'react-native';
 import { PieChart } from 'react-native-chart-kit'; 
 // @ts-ignore
-import { Paystack } from 'react-native-paystack-webview'; 
+import  Paystack  from 'react-native-paystack-webview';
 
 const PAYSTACK_PUBLIC_KEY = "pk_test_98f8cc28b78510671738e38c8ea8c9aeafb55a58"; 
 const screenWidth = Dimensions.get("window").width;
