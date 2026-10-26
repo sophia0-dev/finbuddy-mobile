@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, StatusBar, Alert, Dimensions, Switch } from 'react-native';
 import { PieChart } from 'react-native-chart-kit'; 
 // @ts-ignore
@@ -76,6 +77,8 @@ export default function App() {
       if (isLogin) {
         setUserToken(data.token);
         setUserProfile(data.user); 
+        await AsyncStorage.setItem('userToken', data.token);
+        await AsyncStorage.setItem('userProfile', JSON.stringify(data.user));
         if (data.user.expenseLogs) setDailyLogs(data.user.expenseLogs);
         if (data.user.sponsorshipRequests) setMyRequests(data.user.sponsorshipRequests);
       } else {
@@ -234,6 +237,12 @@ export default function App() {
       Alert.alert("Network Error", "Failed to connect to server.");
     }
   };
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('userToken');
+    await AsyncStorage.removeItem('userProfile');
+    setUserToken(null);
+    setUserProfile(null);
+  };
 
   if (userToken && userProfile) {
     if (userProfile.role === 'Sponsor') {
@@ -298,8 +307,8 @@ export default function App() {
               <View style={{marginTop: 15}}>
                 {globalRequests.map((student, sIdx) => (
                   <View key={sIdx} style={{marginBottom: 15, padding: 15, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 10}}>
-                    <Text style={{color: '#FFFFFF', fontWeight: 'bold', fontSize: 16}}>{student.name}</Text>
-                    <Text style={{color: '#A5B4FC', fontSize: 12, marginBottom: 10}}>{student.matricNumber}</Text>
+                    <Text style={{color: '#FFFFFF', fontWeight: 'bold', fontSize: 16}}>{student.anonymousId || "Anonymous Student"}</Text>
+<Text style={{color: '#A5B4FC', fontSize: 12, marginBottom: 10}}>{student.institution} • {student.degreeProgram}</Text>
                     {student.sponsorshipRequests.map((req: any, rIdx: number) => (
                       <View key={rIdx} style={[styles.listItem, {backgroundColor: 'rgba(251, 191, 36, 0.1)', marginTop: 5, padding: 10}]}>
                         <View>
@@ -378,7 +387,7 @@ export default function App() {
               </View>
             )}
           </View>
-          <TouchableOpacity style={[styles.button, {backgroundColor: '#EF4444', marginTop: 10}]} onPress={() => setUserToken(null)}><Text style={styles.buttonText}>Log Out</Text></TouchableOpacity>
+          <TouchableOpacity style={[styles.button, {backgroundColor: '#EF4444', marginTop: 10}]} onPress={handleLogout}><Text style={styles.buttonText}>Log Out</Text></TouchableOpacity>
         </ScrollView>
       );
     }
@@ -482,7 +491,7 @@ export default function App() {
             {chartData.length > 0 && <PieChart data={chartData} width={screenWidth - 80} height={200} chartConfig={{ color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})` }} accessor={"population"} backgroundColor={"transparent"} paddingLeft={"0"} center={[10, 0]} absolute />}
           </View>
         )}
-        <TouchableOpacity style={[styles.button, {backgroundColor: '#EF4444', marginTop: 10}]} onPress={() => setUserToken(null)}><Text style={styles.buttonText}>Secure Log Out</Text></TouchableOpacity>
+        <TouchableOpacity style={[styles.button, {backgroundColor: '#EF4444', marginTop: 10}]} onPress={handleLogout}><Text style={styles.buttonText}>Secure Log Out</Text></TouchableOpacity>
       </ScrollView>
     );
   }
