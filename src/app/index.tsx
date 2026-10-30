@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView, StatusBar, Alert, Dimensions, Switch } from 'react-native';
-import { PieChart } from 'react-native-chart-kit'; 
+import { BarChart } from 'react-native-chart-kit';
 // @ts-ignore
 import  Paystack  from 'react-native-paystack-webview';
 
@@ -91,18 +91,45 @@ export default function App() {
     }
   };
 
-  const addExpense = () => {
-    if (!expenseName || !expenseCost || !expenseUtility) return Alert.alert("Error", "Fill all fields.");
-    setExpenseItems([...expenseItems, { name: expenseName, cost: Number(expenseCost), utility: Number(expenseUtility), isFixed }]);
-    setExpenseName(''); setExpenseCost(''); setExpenseUtility('5'); setIsFixed(false);
-  };
+const addExpense = () => {
+  if (!expenseName || !expenseCost) return Alert.alert("Error", "Fill all fields.");
+  
+  let autoUtility = Number(expenseUtility);
+  let autoFixed = isFixed;
+  const name = expenseName.toLowerCase();
+  
+  if (name.includes('food') || name.includes('health') || name.includes('rent')) {
+    autoUtility = 10;
+    autoFixed = true; 
+  } else if (name.includes('misc') || name.includes('flex')) {
+    autoUtility = 2;
+  }
+  
+  setExpenseItems([...expenseItems, { name: expenseName, cost: Number(expenseCost), utility: autoUtility, isFixed: autoFixed }]);
+  setExpenseName(''); setExpenseCost('');
+};
 
-  const runOptimization = async () => {
+const runOptimization = async () => {
     if (expenseItems.length === 0) return Alert.alert("No Expenses", "Add at least one expense.");
+
+    // ADD THE EXAMINER'S LOGIC HERE: Check if total cost exceeds budget
+    const totalCost = expenseItems.reduce((sum, item) => sum + Number(item.cost), 0);
+    if (totalCost > Number(budget)) {
+      Alert.alert(
+        "Budget Exceeded", 
+        `You are ₦${totalCost - Number(budget)} over budget. The ILP engine will now step in to prioritize your essentials.`
+      );
+    }
+
     setIsOptimizing(true);
     try {
-      const response = await fetch('https://finbuddy-backend-nr0v.onrender.com/api/optimize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ totalIncome: Number(budget), expenseItems }) });
+      const response = await fetch('https://finbuddy-backend-nr0v.onrender.com/api/optimize', { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' }, 
+        body: JSON.stringify({ totalIncome: Number(budget), expenseItems }) 
+      });
       const data = await response.json();
+      
       setIsOptimizing(false);
       if (data.success) setOptimizationResult(data.data);
       else Alert.alert("Error", data.error);
@@ -392,7 +419,13 @@ export default function App() {
       );
     }
 
-    const chartData = optimizationResult ? optimizationResult.optimalAllocation.filter((item: any) => item.allocated > 0).map((item: any, index: number) => ({ name: item.name, population: item.allocated, color: ['#34D399', '#60A5FA', '#FBBF24', '#F87171'][index % 4], legendFontColor: "#FFFFFF", legendFontSize: 13 })) : [];
+  const chartLabels = optimizationResult ? optimizationResult.optimalAllocation.filter((item: any) => item.allocated > 0).map((item: any) => item.name) : [];
+  const chartValues = optimizationResult ? optimizationResult.optimalAllocation.filter((item: any) => item.allocated > 0).map((item: any) => item.allocated) : [];
+  
+  const barChartData = {
+    labels: chartLabels,
+    datasets: [{ data: chartValues.length > 0 ? chartValues : [0] }] // Fallback to 0 if empty
+  };
     return (
       <ScrollView contentContainerStyle={styles.dashboardContainer}>
         <StatusBar barStyle="light-content" />
@@ -488,7 +521,25 @@ export default function App() {
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Optimized Breakdown</Text>
             <Text style={styles.savingsText}>Leftover Savings: ₦{optimizationResult.leftoverSavings}</Text>
-            {chartData.length > 0 && <PieChart data={chartData} width={screenWidth - 80} height={200} chartConfig={{ color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})` }} accessor={"population"} backgroundColor={"transparent"} paddingLeft={"0"} center={[10, 0]} absolute />}
+           {chartLabels.length > 0 && (
+              <BarChart
+                data={barChartData}
+                width={screenWidth - 80}
+                height={220}
+                yAxisLabel="₦"
+                yAxisSuffix=""
+                chartConfig={{
+                  backgroundColor: 'transparent',
+                  backgroundGradientFromOpacity: 0,
+                  backgroundGradientToOpacity: 0,
+                  decimalPlaces: 0,
+                  color: (opacity = 1) => `rgba(52, 211, 153, ${opacity})`, // Renders bars in your theme's green
+                  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+                  barPercentage: 0.6,
+                }}
+                style={{ marginVertical: 10, borderRadius: 8 }}
+              />
+            )}
           </View>
         )}
         <TouchableOpacity style={[styles.button, {backgroundColor: '#EF4444', marginTop: 10}]} onPress={handleLogout}><Text style={styles.buttonText}>Secure Log Out</Text></TouchableOpacity>
